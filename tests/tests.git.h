@@ -45,7 +45,7 @@ int TestGitAPI()
 		TEST(git_commit_lookup(&commit, repo, &oid), 0);
 		if (commit)
 		{
-			TEST(std::string(git_commit_message(commit)), "Test description for CL 12345678\n\nDetails\n[p4-fusion: depot-paths = \"//a/b/c/\": change = 12345678]");
+			TEST(std::string(git_commit_message(commit)), "Test description for CL 12345678\n\nDetails\n\n[p4-fusion: depot-paths = \"//a/b/c/\": change = 12345678]");
 			TEST(std::string(git_commit_author(commit)->name), "test.user");
 			TEST(std::string(git_commit_committer(commit)->name), "test.user");
 			TEST(std::string(git_commit_committer(commit)->email), "test@user");

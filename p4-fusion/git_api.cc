@@ -305,7 +305,7 @@ std::string GitAPI::Commit(
 	STDHelpers::StripSurrounding(desc, '\t');
 
 	// -3 to remove the trailing "..."
-	std::string commitMsg = cl + " - " + desc + "\n[p4-fusion: depot-paths = \"" + depotPath.substr(0, depotPath.size() - 3) + "\": change = " + cl + "]";
+	std::string commitMsg = desc + "\n\n[p4-fusion: depot-paths = \"" + depotPath.substr(0, depotPath.size() - 3) + "\": change = " + cl + "]";
 
 	// Find the parent commits.
 	// Order is very important.
