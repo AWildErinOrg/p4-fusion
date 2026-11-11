@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <cstddef>
 
 #include "git2.h"
 #include "git2/sys/repository.h"
@@ -37,7 +38,7 @@ GitAPI::GitAPI(bool fsyncEnable, bool clRefsEnabled)
 	GIT2(git_libgit2_opts(GIT_OPT_ENABLE_STRICT_HASH_VERIFICATION, (int)0));
 
 	// Global RAM cache: 1gb...
-	GIT2(git_libgit2_opts(GIT_OPT_SET_CACHE_MAX_SIZE, (ssize_t)(1024 * 1024 * 1024)));
+	GIT2(git_libgit2_opts(GIT_OPT_SET_CACHE_MAX_SIZE, static_cast<std::ptrdiff_t>(1024 * 1024 * 1024)));
 
 	// 20Mb for the file name tree cache...
 	GIT2(git_libgit2_opts(GIT_OPT_SET_CACHE_OBJECT_LIMIT, GIT_OBJECT_TREE, (size_t)(20 * 1024 * 1024)));

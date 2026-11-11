@@ -6,9 +6,14 @@
  */
 #include "timer.h"
 
+namespace P4Fusion
+{
+
 const std::chrono::high_resolution_clock Timer::s_Clock;
 
 Timer::Timer()
     : m_StartTime(Now())
 {
 }
+
+} // namespace P4Fusion

@@ -372,6 +372,11 @@ void internal_mtr_raw_event(const char *category, const char *name, char ph, voi
 #ifndef MTR_ENABLED
 	return;
 #endif
+	// Startup may emit events before the trace file is opened. In particular,
+	// Windows critical sections cannot be used until mtr_init has run.
+	if (!event_buffer) {
+		return;
+	}
 	pthread_mutex_lock(&mutex);
 	if (!is_tracing || event_count >= INTERNAL_MINITRACE_BUFFER_SIZE) {
 		pthread_mutex_unlock(&mutex);
@@ -429,6 +434,9 @@ void internal_mtr_raw_event_arg(const char *category, const char *name, char ph,
 #ifndef MTR_ENABLED
 	return;
 #endif
+	if (!event_buffer) {
+		return;
+	}
 	pthread_mutex_lock(&mutex);
 	if (!is_tracing || event_count >= INTERNAL_MINITRACE_BUFFER_SIZE) {
 		pthread_mutex_unlock(&mutex);

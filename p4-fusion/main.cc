@@ -31,7 +31,7 @@ void SignalHandler(sig_atomic_t s);
 
 int Main(int argc, char** argv)
 {
-	Timer programTimer;
+	P4Fusion::Timer programTimer;
 
 	Arguments::GetSingleton()->RequiredParameter("--path", "P4 depot path to convert to a Git repo.  If used with '--branch', this is the base path for the branches.");
 	Arguments::GetSingleton()->RequiredParameter("--src", "Relative path where the git repository should be created. This path should be empty before running p4-fusion for the first time in a directory.");
@@ -352,7 +352,7 @@ int Main(int argc, char** argv)
 	SUCCESS("Received userbase details from the Perforce server");
 
 	// Commit procedure start
-	Timer commitTimer;
+	P4Fusion::Timer commitTimer;
 
 	PRINT("Last CL to start downloading is CL " << changes.at(lastDownloadedCL).number);
 
@@ -492,7 +492,7 @@ void SignalHandler(sig_atomic_t s)
 	}
 	called = true;
 
-	ERR("Signal Received: " << strsignal(s));
+	ERR("Signal Received: " << s);
 
 	ThreadPool::GetSingleton()->ShutDown();
 

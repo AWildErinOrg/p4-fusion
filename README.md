@@ -164,6 +164,69 @@ Because of the extra effort the script performs, expect it to take orders of mag
 
 ## Build
 
+### Windows (x64, Visual Studio 2022)
+
+Install Visual Studio 2022 (or Build Tools) with **Desktop development with C++**
+and a Windows SDK, plus CMake 3.21 or later. The PowerShell scripts use the
+Visual Studio generator, so a Developer Command Prompt is not required.
+
+Download the [Windows x64 Perforce C++ SDK](https://ftp.perforce.com/perforce/r24.1/bin.ntx64/).
+For a Release build, use `p4api_vs2022_static_openssl3.zip`. Extract the SDK so
+that `vendor/helix-core-api/windows/include/p4/clientapi.h` and
+`vendor/helix-core-api/windows/lib/libclient.lib` exist, or pass the extracted
+SDK root with `-HelixApi`.
+
+Provide static x64 OpenSSL libraries built with the static MSVC runtime (`/MT`)
+and matching the SDK's OpenSSL version. The Windows CI build uses OpenSSL 3.0.19
+with the 2024.1 `openssl3` SDK. Set `-OpenSslRoot` to the OpenSSL installation
+containing `include/openssl` and `lib`. To build that dependency from an
+[OpenSSL source release](https://github.com/openssl/openssl/releases/tag/openssl-3.0.19),
+run the following inside its extracted source directory from an **x64 Native
+Tools Command Prompt for VS 2022** (requires Perl):
+
+```bat
+perl Configure VC-WIN64A no-shared no-tests no-asm --prefix=C:\deps\openssl-static
+nmake /nologo build_libs
+nmake /nologo install_dev
+```
+
+From PowerShell in this repository, configure, build, and run the tests:
+
+```powershell
+./generate_cache.ps1 -Configuration Release -OpenSslRoot C:/deps/openssl-static -BuildTests
+./build.ps1 -Configuration Release -RunTests
+```
+
+Add `-Profiling` when configuring to enable tracing. `-BuildDirectory` overrides
+the default `build/windows/Release` directory; pass the same directory to both
+scripts. An existing vcpkg toolchain can instead be passed as `-ToolchainFile`;
+the script selects `x64-windows-static`, and the installed OpenSSL version must
+still match the chosen Perforce SDK.
+
+The executable is `build/windows/Release/p4-fusion/Release/p4-fusion.exe`:
+
+```powershell
+& ./build/windows/Release/p4-fusion/Release/p4-fusion.exe `
+    --path //depot/path/... `
+    --user $env:P4USER `
+    --port $env:P4PORT `
+    --client $env:P4CLIENT `
+    --src clones/.git `
+    --lookAhead 2000
+```
+
+For Debug builds, use the SDK archive with `static_vsdebug` in its name and
+OpenSSL built with `/MTd`; pass `-Configuration Debug` to both scripts and use
+separate SDK and OpenSSL directories. Release, RelWithDebInfo, and MinSizeRel
+use the Release SDK and `/MT`. Do not mix dynamic-runtime (`dyn`, `/MD`) SDKs or
+libraries with this build.
+
+The `validate-migration.sh` script still requires a POSIX shell. Windows CI
+checks compilation, startup, and unit tests; a migration against a Perforce
+server should also be validated before using the Windows port for production.
+
+### Linux and macOS
+
 0. Pre-requisites
   * Install zlib - `brew install zlib`
   * Install openssl (try 1.1.1, 3.x.x doesn't work with p4 API libs) - `brew install openssl@1.1`

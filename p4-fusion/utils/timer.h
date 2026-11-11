@@ -8,6 +8,9 @@
 
 #include <chrono>
 
+namespace P4Fusion
+{
+
 typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
 
 class Timer
@@ -24,3 +27,5 @@ public:
 	/// Get time spent since construction of this object in seconds
 	float GetTimeS() const { return (float)(s_Clock.now() - m_StartTime).count() * 1e-9; }
 };
+
+} // namespace P4Fusion

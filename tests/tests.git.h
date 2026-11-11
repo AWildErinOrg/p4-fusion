@@ -8,6 +8,7 @@
 
 #include "tests.common.h"
 #include "git_api.h"
+#include "git2.h"
 
 int TestGitAPI()
 {
@@ -15,7 +16,7 @@ int TestGitAPI()
 
 	GitAPI git(false);
 
-	TEST(git.InitializeRepository("/tmp/test-repo"), true);
+	TEST(git.InitializeRepository("test-repo"), true);
 	git.CreateIndex();
 	git.AddFileToIndex("foo.txt", { 'x', 'y', 'z' }, false);
 	std::string commitSHA1 = git.Commit(
@@ -24,7 +25,7 @@ int TestGitAPI()
 	    "test.user",
 	    "test@user",
 	    0,
-	    "Test description",
+	    "Test description for CL 12345678\n\nDetails",
 	    10000000,
 	    "");
 	TEST(git.IsHEADExists(), true);
@@ -32,6 +33,26 @@ int TestGitAPI()
 	TEST(git.IsRepositoryClonedFrom("//a/b/c/d/..."), false);
 	TEST(git.IsRepositoryClonedFrom("//x/y/z/..."), false);
 	TEST(git.DetectLatestCL(), "12345678");
+
+	// Preserve the description without adding a CL prefix, and retain resume metadata.
+	git_repository* repo = nullptr;
+	TEST(git_repository_open(&repo, "test-repo"), 0);
+	if (repo)
+	{
+		git_oid oid;
+		TEST(git_oid_fromstr(&oid, commitSHA1.c_str()), 0);
+		git_commit* commit = nullptr;
+		TEST(git_commit_lookup(&commit, repo, &oid), 0);
+		if (commit)
+		{
+			TEST(std::string(git_commit_message(commit)), "Test description for CL 12345678\n\nDetails\n[p4-fusion: depot-paths = \"//a/b/c/\": change = 12345678]");
+			TEST(std::string(git_commit_author(commit)->name), "test.user");
+			TEST(std::string(git_commit_committer(commit)->name), "test.user");
+			TEST(std::string(git_commit_committer(commit)->email), "test@user");
+			git_commit_free(commit);
+		}
+		git_repository_free(repo);
+	}
 
 	git.RemoveFileFromIndex("foo.txt");
 	std::string commitSHA2 = git.Commit(
@@ -58,7 +79,7 @@ int TestGitAPI()
 
 	// With CL refs disabled, no "refs/cl/<cl>" reference should be created.
 	GitAPI gitNoRefs(false, false);
-	TEST(gitNoRefs.InitializeRepository("/tmp/test-repo-no-cl-refs"), true);
+	TEST(gitNoRefs.InitializeRepository("test-repo-no-cl-refs"), true);
 	gitNoRefs.CreateIndex();
 	gitNoRefs.AddFileToIndex("foo.txt", { 'x', 'y', 'z' }, false);
 	gitNoRefs.Commit(

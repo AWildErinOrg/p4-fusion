@@ -9,11 +9,14 @@ add_executable(p4-fusion-test
 
 target_include_directories(p4-fusion-test PRIVATE
     ../p4-fusion/
-    ../${HELIX_API}/include/
     ../vendor/libgit2/include/
     ../vendor/minitrace/
 )
 
 target_link_libraries(p4-fusion-test PRIVATE
+    helix-api
     git2
+    minitrace
 )
+
+add_test(NAME p4-fusion-test COMMAND p4-fusion-test)

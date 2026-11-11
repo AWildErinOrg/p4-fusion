@@ -3,6 +3,51 @@ name: build-check
 on: [push, pull_request]
 
 jobs:
+  windows:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Download Windows dependencies
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force build/deps | Out-Null
+        Invoke-WebRequest https://ftp.perforce.com/perforce/r24.1/bin.ntx64/p4api_vs2022_static_openssl3.zip -OutFile build/deps/p4api.zip
+        Expand-Archive build/deps/p4api.zip build/deps/p4api
+        $sdk = Get-ChildItem build/deps/p4api -Directory | Where-Object { Test-Path "$($_.FullName)/include/p4/clientapi.h" }
+        if (@($sdk).Count -ne 1) { throw 'Expected one Perforce SDK directory' }
+        "HELIX_API=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        Invoke-WebRequest https://github.com/openssl/openssl/releases/download/openssl-3.0.19/openssl-3.0.19.tar.gz -OutFile build/deps/openssl.tar.gz
+        tar -xzf build/deps/openssl.tar.gz -C build/deps
+        if ($LASTEXITCODE -ne 0) { throw 'OpenSSL extraction failed' }
+
+    - name: Build static OpenSSL
+      shell: cmd
+      run: |
+        call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        if errorlevel 1 exit /b 1
+        cd build\deps\openssl-3.0.19
+        perl Configure VC-WIN64A no-shared no-tests no-asm --prefix=%GITHUB_WORKSPACE%\build\deps\openssl-install
+        if errorlevel 1 exit /b 1
+        nmake /nologo build_libs
+        if errorlevel 1 exit /b 1
+        nmake /nologo install_dev
+        if errorlevel 1 exit /b 1
+
+    - name: Configure Windows build
+      shell: pwsh
+      run: ./generate_cache.ps1 -Configuration Release -HelixApi $env:HELIX_API -OpenSslRoot "$env:GITHUB_WORKSPACE/build/deps/openssl-install" -BuildTests -Profiling
+
+    - name: Build and test Windows
+      shell: pwsh
+      run: |
+        ./build.ps1 -Configuration Release -RunTests
+        & ./build/windows/Release/p4-fusion/Release/p4-fusion.exe
+        if ($LASTEXITCODE -ne 0) { throw 'p4-fusion startup failed' }
+
   ubuntu:
     runs-on: "ubuntu-latest"
 
